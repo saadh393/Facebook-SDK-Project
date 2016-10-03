@@ -1,0 +1,14 @@
+<?php
+    // Start the buffering //
+ob_start();
+?>
+
+
+Page Content
+
+<?php
+echo '1';
+
+  // Get the content that is in the buffer and put it in your file //
+file_put_contents('yourpage.html', ob_get_contents());
+?>
