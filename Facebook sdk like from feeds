@@ -1,16 +1,15 @@
 <?php
 session_start();
-// require_once __DIR__ . '/src/Facebook/autoload.php';
 require_once '../src/Facebook/autoload.php';
+
 $fb = new Facebook\Facebook([
-  'app_id' => '157101825320732',
-  'app_secret' => '858a031b008206a8e084ea7a3d7f16',
+  'app_id' => '1571018253207532',
+  'app_secret' => '858a031b008206f3a8e084ea7a3d7f16',
   'default_graph_version' => 'v2.4',
   ]);
 
 $helper = $fb->getRedirectLoginHelper();
-
-$permissions = ['email']; // optional
+$permissions = ['email', 'user_posts']; // optional
 
 try {
 	if (isset($_SESSION['facebook_access_token'])) {
@@ -55,7 +54,7 @@ if (isset($accessToken)) {
 
 	// getting basic info about user
 	try {
-		$profile_request = $fb->get('me?fields=feed{likes}');
+		$profile_request = $fb->get('me?fields=feed.limit(50){likes.limit(10)},name');
 		$user = $profile_request->getGraphNode();
     	
     	
@@ -73,69 +72,73 @@ if (isset($accessToken)) {
 	}
 
 	// printing $profile array on the screen which holds the basic info about user
-	echo print ($user);
-	
 
+$myuser = json_decode($user, true);
+$score = array();
 
+for($i=0; $i<Count($myuser['feed']); $i++){
+for($j=0; $j<Count($myuser['feed'][$i]['likes']); $j++){
 
-//---------------------------------------------------Starting My Code Here---------------------------------------------
+if(!isset($score[$myuser['feed'][$i]['likes'][$j]['name']])){
+$score[$myuser['feed'][$i]['likes'][$j]['name']]= 0;
+}else{
+$score[$myuser['feed'][$i]['likes'][$j]['name']]++;
+}
 
-//---------------------------------------------------End of  My Code Here---------------------------------------------
+}
+}
 
+echo "-----------------------";
+echo "<br>";
+asort($score);
+    
+$mostLiker = array();
+$i= 0;
+$j=0;
 
-  	// Now you can redirect to another page and use the access token from $_SESSION['facebook_access_token']
+foreach($score as $key=>$value){
+$i++;
+if($i<count($score)-5){continue;}
+
+echo $key." = ".$value."<br>";
+$mostLiker[$j] = $key;
+$j++;
+}
+
+print_r($mostLiker);
+echo "==============================================================<br>";
+
+for($i=0; $i<count($mostLiker)-1; $i++){
+echo $i."<br>";
+echo $mostLiker[$i]."<br>";
+if($user['name']==$mostLiker[$i]){unset($mostLiker[$i]);}
+
+}
+
+echo "==============================================================<br>";
+print_r($mostLiker);
+echo "==============================================================<br>";
+
+/*
+for($i=0; $i<count($mostliker); $i++){
+if($user['name']==$mostliker[$i]){unset($mostliker[$i]);}
+
+}
+$random = rand(1,5);
+echo "==============================================================";
+echo "==============================================================<br>";
+echo "==============================================================<br>";
+echo "==============================================================<br>";
+do{
+$random = rand(1,5);
+echo $mostLiker[$random];
+}while($mostLiker[$random]==$user['name']);
+*/
 } else {
-	// replace your website URL same as added in the developers.facebook.com/apps e.g. if you used http instead of https and you used non-www version or www version of your website then you must add the same here
-	$loginUrl = $helper->getLoginUrl('http://appguru.epizy.com/guruji/try/myCodes.php', $permissions);
-$html_part1 = <<<TEST
-<html>
-<head>
 
-<title>
-Log in
-</title>
-<link rel="stylesheet" type="text/css" href="style.css">
-
-</head>
-
-<body>
-
-<br><br><br><br><br>
-
-<center>
-
-<div class="iv"><br>
-
-<font class="tr">কেমন হবে আপনার ভবিষ্যৎ?</font>
-
-<form method = "post" action = "infile.php">
-<img id="guruji" src="image/guruji.png" alt="গুরুজি" />
-<br>
-<font class="ltr"> জানতে চাইলে...</font><br>
-<a href="
-
-TEST;
-
-$html_part2 = <<<TEST
-"><img id="submitButton" src="image/fbbutton.png" alt="Log in with facebook" /></a>
+	$loginUrl = $helper->getLoginUrl('http://appguru.epizy.com/guruji/code_panel/myCodes.php', $permissions);
 
 
-
-
-</form>
-
-</div>
-
-<center>
-
-</body>
-</html>
-
-
-TEST;
-
-$attached_html = $html_part1.$loginUrl.$html_part2;
-
-echo $attached_html;
+echo "<a href='{$loginUrl}'>Log in</a>";
 }
 ?>
