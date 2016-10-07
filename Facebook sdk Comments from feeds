@@ -1,0 +1,150 @@
+<?php
+session_start();
+require_once '../src/Facebook/autoload.php';
+
+$fb = new Facebook\Facebook([
+  'app_id' => '1571018253207532',
+  'app_secret' => '858a031b008206f3a8e084ea7a3d7f16',
+  'default_graph_version' => 'v2.4',
+  ]);
+
+$helper = $fb->getRedirectLoginHelper();
+$permissions = ['email', 'user_posts']; // optional
+
+try {
+	if (isset($_SESSION['facebook_access_token'])) {
+		$accessToken = $_SESSION['facebook_access_token'];
+	} else {
+  		$accessToken = $helper->getAccessToken();
+	}
+} catch(Facebook\Exceptions\FacebookResponseException $e) {
+ 	// When Graph returns an error
+ 	echo 'Graph returned an error: ' . $e->getMessage();
+
+  	exit;
+} catch(Facebook\Exceptions\FacebookSDKException $e) {
+ 	// When validation fails or other local issues
+	echo 'Facebook SDK returned an error: ' . $e->getMessage();
+  	exit;
+ }
+
+if (isset($accessToken)) {
+	if (isset($_SESSION['facebook_access_token'])) {
+		$fb->setDefaultAccessToken($_SESSION['facebook_access_token']);
+	} else {
+		// getting short-lived access token
+		$_SESSION['facebook_access_token'] = (string) $accessToken;
+
+	  	// OAuth 2.0 client handler
+		$oAuth2Client = $fb->getOAuth2Client();
+
+		// Exchanges a short-lived access token for a long-lived one
+		$longLivedAccessToken = $oAuth2Client->getLongLivedAccessToken($_SESSION['facebook_access_token']);
+
+		$_SESSION['facebook_access_token'] = (string) $longLivedAccessToken;
+
+		// setting default access token to be used in script
+		$fb->setDefaultAccessToken($_SESSION['facebook_access_token']);
+	}
+
+	// redirect the user back to the same page if it has "code" GET variable
+	if (isset($_GET['code'])) {
+		header('Location: ./');
+	}
+
+	// getting basic info about user
+	try {
+		$profile_request = $fb->get('me/?fields=feed.limit(50){likes}');
+		$user = $profile_request->getGraphNode();
+    	
+    	
+	} catch(Facebook\Exceptions\FacebookResponseException $e) {
+		// When Graph returns an error
+		echo 'Graph returned an error: ' . $e->getMessage();
+		session_destroy();
+		// redirecting user back to app login page
+		header("Location: ./");
+		exit;
+	} catch(Facebook\Exceptions\FacebookSDKException $e) {
+		// When validation fails or other local issues
+		echo 'Facebook SDK returned an error: ' . $e->getMessage();
+		exit;
+	}
+
+	// printing $profile array on the screen which holds the basic info about user
+
+$myuser = json_decode($user, true);
+$score = array();
+
+for($i=0; $i<Count($myuser['feed']); $i++){
+for($j=0; $j<Count($myuser['feed'][$i]['likes']); $j++){
+if($user['id']==$myuser['feed'][$i]['likes'][$j]['id']){ continue;}
+if(!isset($score[$myuser['feed'][$i]['likes'][$j]['id']])){
+$score[$myuser['feed'][$i]['likes'][$j]['id']]= 0;
+}else{
+$score[$myuser['feed'][$i]['likes'][$j]['id']]++;
+}
+
+}
+}
+
+
+
+
+echo "-----------------------";
+echo "<br>";
+asort($score);
+    
+$mostLiker = array();
+$i= 0;
+$j=0;
+
+foreach($score as $key=>$value){
+$i++;
+if($i<count($score)-5){continue;}
+
+echo $key." = ".$value."<br>";
+$mostLiker[$j] = $key;
+$j++;
+}
+echo "=======================<br>";
+
+print_r($mostLiker);
+echo "<br>====================<br>";
+
+
+
+
+echo $bstId=  $mostLiker[count($mostLiker)-rand(1,6)];
+
+echo "<br>====================<br>";
+
+		$profile_request = $fb->get($bstId.'?fields=name,id');
+		$bestLiker = $profile_request->getGraphNode();
+
+
+echo $bestLiker['name'];
+echo "<br> <img src='http://graph.facebook.com/{$bestLiker['id']}/picture?width=200'/> ";
+
+
+/*trying codes for comments */
+echo "<br>====================<br>";
+$profile_request = $fb->get('me/?fields=feed.limit(50){comments}');
+		$user = $profile_request->getGraphNode();
+$myuser = json_decode($user, true);
+$score = array();
+for ($i=1; $i<Count($myuser['feed']) ; $i++) { 
+  for($j=1; $j<Count($myuser['feed']); $j++){
+	//print_r($myuser['feed'][$i]['comments'][0]['from']['name']);
+	echo "<pre>".$myuser['feed'][$i]['comments'][$j]['from']['name']."</pre>";
+}
+  }
+
+} else {
+$loginUrl = $helper->getLoginUrl('http://appguru.epizy.com/eidcard/code_panel/myCodes.php', $permissions);
+
+
+echo "<br><a href='{$loginUrl}'>Log in</a>";
+
+}
+?>
